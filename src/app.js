@@ -3,7 +3,7 @@ import cors from "cors";
 import healthRoutes from "./routes/health.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
 import buyTokenRoutes from "./routes/buyToken.routes.js"; // NUEVO
-
+import transactionsRoutes from "./routes/transactions.routes.js";
 const app = express();
 
 // Middlewares
@@ -18,6 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", healthRoutes);
 app.use("/api", dashboardRoutes);
 app.use("/api", buyTokenRoutes); // NUEVO
+app.use("/api", transactionsRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
