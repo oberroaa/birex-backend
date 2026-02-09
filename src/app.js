@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
-import healthRoutes from "./routes/health.routes.js";
-import dashboardRoutes from "./routes/dashboard.routes.js";
-import buyTokenRoutes from "./routes/buyToken.routes.js"; // NUEVO
-import transactionsRoutes from "./routes/transactions.routes.js";
+import healthRoutes from "./routes/user/health.routes.js";
+import dashboardRoutes from "./routes/user/dashboard.routes.js";
+import buyTokenRoutes from "./routes/user/buyToken.routes.js"; // NUEVO
+import transactionsRoutes from "./routes/user/transactions.routes.js";
+import profileRoutes from "./routes/user/profile.routes.js";
 const app = express();
 
 // Middlewares
@@ -14,11 +15,12 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rutas
-app.use("/api", healthRoutes);
-app.use("/api", dashboardRoutes);
-app.use("/api", buyTokenRoutes); // NUEVO
-app.use("/api", transactionsRoutes);
+// Rutas User
+app.use("/api/user", healthRoutes);
+app.use("/api/user", dashboardRoutes);
+app.use("/api/user", buyTokenRoutes); // NUEVO
+app.use("/api/user", transactionsRoutes);
+app.use("/api/user", profileRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
