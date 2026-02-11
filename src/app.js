@@ -22,6 +22,10 @@ app.use("/api/user", buyTokenRoutes); // NUEVO
 app.use("/api/user", transactionsRoutes);
 app.use("/api/user", profileRoutes);
 
+// Rutas Admin
+import adminRoutes from "./routes/admin/index.js";
+app.use("/api/admin", adminRoutes);
+
 // Manejo de rutas no encontradas
 app.use((req, res) => {
     res.status(404).json({ error: "Route not found" });
