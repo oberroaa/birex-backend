@@ -5,6 +5,7 @@ import dashboardRoutes from "./routes/user/dashboard.routes.js";
 import buyTokenRoutes from "./routes/user/buyToken.routes.js"; // NUEVO
 import transactionsRoutes from "./routes/user/transactions.routes.js";
 import profileRoutes from "./routes/user/profile.routes.js";
+import adminDashboardRoutes from "./routes/admin/dashboard.routes.js";
 const app = express();
 
 // Middlewares
@@ -21,6 +22,9 @@ app.use("/api/user", dashboardRoutes);
 app.use("/api/user", buyTokenRoutes); // NUEVO
 app.use("/api/user", transactionsRoutes);
 app.use("/api/user", profileRoutes);
+
+// Rutas Admin
+app.use("/api/admin", adminDashboardRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
