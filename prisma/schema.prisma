@@ -1,5 +1,3 @@
-// schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,31 +7,122 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Usuario
 model User {
-  id                String        @id @default(uuid())
-  email             String        @unique
-  password          String
-  fullName          String
-  mobile            String?
-  dateOfBirth       DateTime?
-  nationality       String?
-  walletAddress     String?
-  emailVerified     Boolean       @default(false)
-  kycStatus         KycStatus     @default(NOT_SUBMITTED)
-  twoFactorEnabled  Boolean       @default(false)
-  referralCode      String        @unique
-  referredBy        String?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
-  // Relaciones
-  tokens            Token[]
-  transactions      Transaction[]
-  contributions     Contribution[]
+  id               String         @id @default(uuid())
+  email            String         @unique
+  password         String
+  fullName         String
+  mobile           String?
+  dateOfBirth      DateTime?
+  nationality      String?
+  walletAddress    String?
+  emailVerified    Boolean        @default(false)
+  kycStatus        KycStatus      @default(NOT_SUBMITTED)
+  role             UserRole       @default(INVESTOR)
+  lastLogin        DateTime?
+  twoFactorEnabled Boolean        @default(false)
+  referralCode     String         @unique
+  referredBy       String?
+  profileImage     String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  contributions    Contribution[]
+  tokens           Token?
+  transactions     Transaction[]
+  kycDocuments     KycDocument[]
 }
 
-// Estado KYC
+model KycDocument {
+  id              String    @id @default(uuid())
+  userId          String
+  firstName       String
+  lastName        String
+  docType         String // Passport, Nidcard, etc.
+  docNumber       String?
+  docFront        String?
+  docBack         String?
+  docSelfie       String?
+  status          KycStatus @default(PENDING)
+  rejectionReason String?
+  submittedAt     DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id])
+}
+
+model Token {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  purchasedTokens  Float    @default(0)
+  referralTokens   Float    @default(0)
+  bonusTokens      Float    @default(0)
+  totalTokens      Float    @default(0)
+  totalContributed Float    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id])
+}
+
+model Round {
+  id              String        @id @default(uuid())
+  roundNumber     Int           @unique
+  status          RoundStatus   @default(UPCOMING)
+  tokenPrice      Float
+  bonusPercentage Int           @default(0)
+  startDate       DateTime
+  endDate         DateTime
+  minContribution Float         @default(100)
+  totalTokens     Float
+  soldTokens      Float         @default(0)
+  raisedAmount    Float         @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  transactions    Transaction[]
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  tranxNo       String            @unique
+  userId        String
+  roundId       String?
+  tokens        Float
+  amount        Float
+  usdtAmount    Float
+  currency      String            @default("USDT")
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  walletTo      String?
+  paymentMethod String?
+  txHash        String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  round         Round?            @relation(fields: [roundId], references: [id])
+  user          User              @relation(fields: [userId], references: [id])
+}
+
+model Contribution {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Float
+  currency  String   @default("USDT")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ProjectConfig {
+  id               String   @id @default(uuid())
+  totalTokenSupply Float
+  totalTokensSold  Float    @default(0)
+  totalRaised      Float    @default(0)
+  currentRound     Int
+  isActive         Boolean  @default(true)
+  updatedAt        DateTime @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  INVESTOR
+}
+
 enum KycStatus {
   NOT_SUBMITTED
   PENDING
@@ -41,78 +130,12 @@ enum KycStatus {
   REJECTED
 }
 
-// Tokens del usuario
-model Token {
-  id                String    @id @default(uuid())
-  userId            String
-  user              User      @relation(fields: [userId], references: [id])
-  
-  // Balance
-  purchasedTokens   Float     @default(0)
-  referralTokens    Float     @default(0)
-  bonusTokens       Float     @default(0)
-  totalTokens       Float     @default(0)
-  
-  // Contribución
-  totalContributed  Float     @default(0) // en USDT
-  
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  
-  @@unique([userId])
-}
-
-// Rondas de venta
-model Round {
-  id                String        @id @default(uuid())
-  roundNumber       Int           @unique
-  status            RoundStatus   @default(UPCOMING)
-  tokenPrice        Float         // Precio en USDT
-  bonusPercentage   Int           @default(0)
-  startDate         DateTime
-  endDate           DateTime
-  minContribution   Float         @default(100)
-  totalTokens       Float
-  soldTokens        Float         @default(0)
-  raisedAmount      Float         @default(0)
-  
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
-  // Relaciones
-  transactions      Transaction[]
-}
-
 enum RoundStatus {
   UPCOMING
   RUNNING
   ENDED
-}
-
-// Transacciones
-model Transaction {
-  id                String            @id @default(uuid())
-  tranxNo           String            @unique
-  userId            String
-  user              User              @relation(fields: [userId], references: [id])
-  roundId           String?
-  round             Round?            @relation(fields: [roundId], references: [id])
-  
-  // Detalles de la transacción
-  tokens            Float
-  amount            Float             // Cantidad en moneda original
-  usdtAmount        Float             // Equivalente en USDT
-  currency          String            @default("USDT")
-  type              TransactionType
-  status            TransactionStatus @default(PENDING)
-  
-  // Información adicional
-  walletTo          String?
-  paymentMethod     String?
-  txHash            String?           // Hash de transacción blockchain
-  
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
+  COMPLETED
+  EXPIRED
 }
 
 enum TransactionType {
@@ -126,32 +149,6 @@ enum TransactionStatus {
   COMPLETED
   CANCELLED
   FAILED
-}
-
-// Contribuciones del usuario
-model Contribution {
-  id                String    @id @default(uuid())
-  userId            String
-  user              User      @relation(fields: [userId], references: [id])
-  
-  amount            Float     // en USDT
-  currency          String    @default("USDT")
-  
-  createdAt         DateTime  @default(now())
-}
-
-// Configuración global del proyecto
-model ProjectConfig {
-  id                String    @id @default(uuid())
-  
-  // Venta de tokens
-  totalTokenSupply  Float
-  totalTokensSold   Float     @default(0)
-  totalRaised       Float     @default(0)
-  
-  // Configuración actual
-  currentRound      Int
-  isActive          Boolean   @default(true)
-  
-  updatedAt         DateTime  @updatedAt
+  APPROVED
+  REJECTED
 }

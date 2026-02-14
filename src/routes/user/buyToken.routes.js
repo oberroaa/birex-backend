@@ -6,7 +6,7 @@ const router = Router();
 // GET /api/buy-token - Datos para la página Buy Token
 router.get("/buy-token", async (req, res) => {
     try {
-        const userId = "test-user-id"; // Temporal, luego usarás auth
+        const userId = "user-1"; // Temporal, luego usarás auth
 
         // 1. Obtener usuario y su balance
         const user = await prisma.user.findUnique({

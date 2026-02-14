@@ -6,7 +6,7 @@ const router = Router();
 // GET /api/profile - Obtener datos del perfil del usuario
 router.get("/profile", async (req, res) => {
     try {
-        const userId = "test-user-id"; // Temporal, luego usarás auth
+        const userId = "user-1"; // Temporal, luego usarás auth
 
         // Obtener usuario completo
         const user = await prisma.user.findUnique({
@@ -65,7 +65,7 @@ router.get("/profile", async (req, res) => {
 // PUT /api/profile - Actualizar perfil del usuario
 router.put("/profile", async (req, res) => {
     try {
-        const userId = "test-user-id"; // Temporal, luego usarás auth
+        const userId = "user-1"; // Temporal, luego usarás auth
         const { fullName, mobile, dateOfBirth, nationality, walletAddress } = req.body;
 
         // Validaciones básicas

@@ -7,7 +7,7 @@ const router = Router();
 router.get("/dashboard", async (req, res) => {
     try {
         // Usuario de prueba temporal
-        const userId = "test-user-id";
+        const userId = "user-1";
 
         // 1. Obtener usuario
         const user = await prisma.user.findUnique({

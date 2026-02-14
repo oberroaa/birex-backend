@@ -6,7 +6,7 @@ const router = Router();
 // GET /api/transactions - Obtener transacciones del usuario
 router.get("/transactions", async (req, res) => {
     try {
-        const userId = "test-user-id"; // Temporal, luego usarás auth
+        const userId = "user-1"; // Temporal, luego usarás auth
         const { page = 1, limit = 10, search = "" } = req.query;
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
