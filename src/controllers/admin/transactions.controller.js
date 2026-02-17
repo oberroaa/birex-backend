@@ -55,7 +55,18 @@ export const getTransactionById = async (req, res) => {
 
         if (!transaction) return res.status(404).json({ success: false, error: "Transaction not found" });
 
-        res.json({ success: true, data: transaction });
+        // Calculate bonus and total tokens
+        const bonusTokens = transaction.tokens * 0.10;
+        const totalTokens = transaction.tokens + bonusTokens;
+
+        res.json({
+            success: true,
+            data: {
+                ...transaction,
+                bonusTokens,
+                totalTokens
+            }
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
@@ -80,6 +91,24 @@ export const updateTransactionStatus = async (req, res) => {
             where: { id },
             data: { status: dbStatus }
         });
+
+        // If approved, update user's token balance
+        if (dbStatus === 'COMPLETED') {
+            await prisma.token.upsert({
+                where: { userId: transaction.userId },
+                update: {
+                    purchasedTokens: { increment: transaction.tokens },
+                    totalTokens: { increment: transaction.tokens },
+                    totalContributed: { increment: transaction.usdtAmount }
+                },
+                create: {
+                    userId: transaction.userId,
+                    purchasedTokens: transaction.tokens,
+                    totalTokens: transaction.tokens,
+                    totalContributed: transaction.usdtAmount
+                }
+            });
+        }
 
         res.json({ success: true, message: "Transaction updated", data: transaction });
     } catch (error) {

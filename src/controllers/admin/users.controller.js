@@ -31,12 +31,14 @@ export const getUsers = async (req, res) => {
                     fullName: true,
                     kycStatus: true,
                     createdAt: true,
+                    emailVerified: true,
+                    lastLogin: true,
+                    role: true,
                     tokens: {
                         select: {
                             totalTokens: true
                         }
                     }
-                    // lastLogin not in schema, omitting
                 }
             }),
             prisma.user.count({ where })
@@ -44,8 +46,27 @@ export const getUsers = async (req, res) => {
 
         // Format users to flatten tokens
         const formattedUsers = users.map(user => ({
-            ...user,
-            tokens: user.tokens.reduce((acc, curr) => acc + curr.totalTokens, 0)
+            id: user.id,
+            userId: user.id,
+            name: user.fullName,
+            email: user.email,
+            tokens: user.tokens && user.tokens.length > 0
+                ? user.tokens.reduce((acc, curr) => acc + (curr.totalTokens || 0), 0)
+                : 0,
+            emailVerified: user.emailVerified,
+            kycVerified: user.kycStatus === 'APPROVED',
+            lastLogin: user.lastLogin
+                ? new Date(user.lastLogin).toLocaleString('en-US', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                })
+                : 'Not logged yet',
+            status: 'Active',
+            role: user.role
         }));
 
         res.json({
@@ -83,8 +104,77 @@ export const getUserById = async (req, res) => {
             return res.status(404).json({ success: false, error: "User not found" });
         }
 
-        res.json({ success: true, data: user });
+        // Calcular total tokens
+        const totalTokens = user.tokens ? user.tokens.totalTokens : 0;
+
+        // Calcular total contributed
+        const totalContributed = user.transactions
+            .filter(tx => tx.status === 'COMPLETED' && tx.type === 'PURCHASE')
+            .reduce((acc, curr) => acc + (curr.usdtAmount || 0), 0);
+
+        // Obtener referidor si existe
+        let referredByData = null;
+        if (user.referredBy) {
+            const referrer = await prisma.user.findUnique({
+                where: { id: user.referredBy },
+                select: { id: true, fullName: true }
+            });
+            if (referrer) {
+                referredByData = {
+                    id: referrer.id,
+                    name: referrer.fullName
+                };
+            }
+        }
+
+        // Formatear respuesta
+        const formattedUser = {
+            id: user.id,
+            userId: user.id,
+            fullName: user.fullName,
+            email: user.email,
+            mobile: user.mobile,
+            dateOfBirth: user.dateOfBirth
+                ? new Date(user.dateOfBirth).toLocaleDateString('en-US', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                })
+                : null,
+            nationality: user.nationality,
+            walletAddress: user.walletAddress,
+            emailVerified: user.emailVerified,
+            kycStatus: user.kycStatus,
+            role: user.role,
+            tokenBalance: totalTokens,
+            contributed: totalContributed,
+            status: 'ACTIVE',
+            joiningDate: new Date(user.createdAt).toLocaleString('en-US', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            }),
+            referredBy: referredByData,
+            referralCode: user.referralCode,
+            twoFactorEnabled: user.twoFactorEnabled,
+            lastLogin: user.lastLogin
+                ? new Date(user.lastLogin).toLocaleString('en-US', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                })
+                : null
+        };
+
+        res.json({ success: true, data: formattedUser });
     } catch (error) {
+        console.error("Get User By ID Error:", error);
         res.status(500).json({ success: false, error: error.message });
     }
 };

@@ -4,12 +4,24 @@ export const getDashboardStats = async (req, res) => {
     try {
         const now = new Date();
         const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const last15Days = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+        const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
         // 1. User Stats
         const totalUsers = await prisma.user.count();
         const newUsersLastWeek = await prisma.user.count({
             where: { createdAt: { gte: lastWeek } }
+        });
+
+        // KYC Stats
+        const kycApprovedUsers = await prisma.user.count({
+            where: { kycStatus: 'APPROVED' }
+        });
+        const kycPercentage = totalUsers > 0 ? Math.round((kycApprovedUsers / totalUsers) * 100) : 0;
+        const newKycLastWeek = await prisma.user.count({
+            where: {
+                kycStatus: 'APPROVED',
+                updatedAt: { gte: lastWeek }
+            }
         });
 
         // 2. Token Stats (from Completed Purchase Transactions)
@@ -54,13 +66,24 @@ export const getDashboardStats = async (req, res) => {
 
         let roundData = null;
         if (currentRound) {
+            // Calculate pending tokens
+            const pendingTokensResult = await prisma.transaction.aggregate({
+                where: {
+                    roundId: currentRound.id,
+                    status: 'PENDING'
+                },
+                _sum: { tokens: true }
+            });
+            const pendingTokens = pendingTokensResult._sum.tokens || 0;
+
             roundData = {
                 roundNumber: currentRound.roundNumber,
                 totalTokens: currentRound.totalTokens,
                 soldTokens: currentRound.soldTokens,
                 soldPercentage: currentRound.totalTokens > 0
                     ? (currentRound.soldTokens / currentRound.totalTokens) * 100
-                    : 0
+                    : 0,
+                pendingTokens: pendingTokens
             };
         }
 
@@ -78,11 +101,11 @@ export const getDashboardStats = async (req, res) => {
             }
         });
 
-        // 5. Registrations History (Last 15 days)
+        // 5. Registrations History (Last 30 days)
         const registrations = await prisma.user.groupBy({
             by: ['createdAt'],
             where: {
-                createdAt: { gte: last15Days }
+                createdAt: { gte: last30Days }
             },
             _count: {
                 id: true
@@ -91,7 +114,7 @@ export const getDashboardStats = async (req, res) => {
 
         // Format registrations by day
         const regHistory = [];
-        for (let i = 14; i >= 0; i--) {
+        for (let i = 29; i >= 0; i--) {
             const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
             const dateStr = date.toISOString().split('T')[0];
             const count = registrations
@@ -99,18 +122,18 @@ export const getDashboardStats = async (req, res) => {
                 .reduce((acc, curr) => acc + curr._count.id, 0);
 
             regHistory.push({
-                name: (15 - i).toString(),
+                name: date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }),
                 users: count
             });
         }
 
-        // 6. Token Sale History (Last 15 days)
+        // 6. Token Sale History (Last 30 days)
         const sales = await prisma.transaction.groupBy({
             by: ['createdAt'],
             where: {
                 status: 'COMPLETED',
                 type: 'PURCHASE',
-                createdAt: { gte: last15Days }
+                createdAt: { gte: last30Days }
             },
             _sum: {
                 tokens: true
@@ -118,7 +141,7 @@ export const getDashboardStats = async (req, res) => {
         });
 
         const saleHistory = [];
-        for (let i = 14; i >= 0; i--) {
+        for (let i = 29; i >= 0; i--) {
             const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
             const dateStr = date.toISOString().split('T')[0];
             const sum = sales
@@ -126,7 +149,7 @@ export const getDashboardStats = async (req, res) => {
                 .reduce((acc, curr) => acc + curr._sum.tokens, 0);
 
             saleHistory.push({
-                day: 15 - i,
+                day: date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' }),
                 value: sum
             });
         }
@@ -136,10 +159,19 @@ export const getDashboardStats = async (req, res) => {
             stats: {
                 totalUsers,
                 newUsersLastWeek,
+                kycApprovedUsers,
+                kycPercentage,
+                newKycLastWeek,
                 totalTokensSold,
                 tokensSoldLastWeek,
                 totalRaised,
-                raisedLastWeek
+                raisedLastWeek,
+                ethRaised: 0,
+                btcRaised: 0,
+                ltcRaised: 0,
+                usdRaised: 0,
+                eurRaised: 0,
+                gbpRaised: 0
             },
             currentRound: roundData,
             recentTransactions: recentTransactions.map(tx => ({

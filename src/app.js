@@ -2,11 +2,15 @@ import express from "express";
 import cors from "cors";
 import healthRoutes from "./routes/user/health.routes.js";
 import dashboardRoutes from "./routes/user/dashboard.routes.js";
-import buyTokenRoutes from "./routes/user/buyToken.routes.js"; // NUEVO
+import buyTokenRoutes from "./routes/user/buyToken.routes.js";
 import transactionsRoutes from "./routes/user/transactions.routes.js";
 import profileRoutes from "./routes/user/profile.routes.js";
 import adminDashboardRoutes from "./routes/admin/dashboard.routes.js";
 import adminTransactionsRoutes from "./routes/admin/transactions.routes.js";
+import adminKycRoutes from "./routes/admin/kyc.routes.js";
+import adminUsersRoutes from "./routes/admin/users.routes.js";
+import adminRoundsRoutes from "./routes/admin/rounds.routes.js";
+
 const app = express();
 
 // Middlewares
@@ -31,13 +35,16 @@ app.use(express.urlencoded({ extended: true }));
 // Rutas User
 app.use("/api/user", healthRoutes);
 app.use("/api/user", dashboardRoutes);
-app.use("/api/user", buyTokenRoutes); // NUEVO
+app.use("/api/user", buyTokenRoutes);
 app.use("/api/user", transactionsRoutes);
 app.use("/api/user", profileRoutes);
 
 // Rutas Admin
 app.use("/api/admin", adminDashboardRoutes);
 app.use("/api/admin/transactions", adminTransactionsRoutes);
+app.use("/api/admin/kyc", adminKycRoutes);
+app.use("/api/admin/users", adminUsersRoutes);
+app.use("/api/admin/rounds", adminRoundsRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {
