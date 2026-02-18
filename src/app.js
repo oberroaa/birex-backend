@@ -10,6 +10,7 @@ import adminTransactionsRoutes from "./routes/admin/transactions.routes.js";
 import adminKycRoutes from "./routes/admin/kyc.routes.js";
 import adminUsersRoutes from "./routes/admin/users.routes.js";
 import adminRoundsRoutes from "./routes/admin/rounds.routes.js";
+import adminEmailRoutes from "./routes/admin/email.routes.js";
 
 const app = express();
 
@@ -45,6 +46,7 @@ app.use("/api/admin/transactions", adminTransactionsRoutes);
 app.use("/api/admin/kyc", adminKycRoutes);
 app.use("/api/admin/users", adminUsersRoutes);
 app.use("/api/admin/rounds", adminRoundsRoutes);
+app.use("/api/admin/email", adminEmailRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {

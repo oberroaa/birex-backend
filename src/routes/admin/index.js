@@ -7,6 +7,8 @@ import usersRoutes from './users.routes.js';
 import transactionsRoutes from './transactions.routes.js';
 import kycRoutes from './kyc.routes.js';
 import roundsRoutes from './rounds.routes.js';
+import emailRoutes from './email.routes.js';
+
 
 const router = Router();
 
@@ -19,5 +21,6 @@ router.use('/users', usersRoutes);
 router.use('/transactions', transactionsRoutes);
 router.use('/kyc', kycRoutes);
 router.use('/rounds', roundsRoutes);
+router.use('/email', emailRoutes);
 
 export default router;
